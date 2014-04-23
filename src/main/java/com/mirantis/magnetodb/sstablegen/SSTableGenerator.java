@@ -1,80 +1,76 @@
 package com.mirantis.magnetodb.sstablegen;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import org.apache.cassandra.exceptions.InvalidRequestException;
+import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 
-import javax.json.*;
-
-import org.apache.cassandra.db.marshal.*;
-import org.apache.cassandra.db.marshal.CompositeType.Builder;
-import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Murmur3Partitioner;
-import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
-import static org.apache.cassandra.utils.UUIDGen.decompose;
 
 public class SSTableGenerator {
-
-    static String filename;
 
     public static void main(String[] args) throws IOException {
 
         String keySpace = "cdrs";
         String table = "events";
 
-        File directory = new File(keySpace + File.separator + table);
+        String schema = "create table " + keySpace + "." + table +
+                " (id text primary key," +
+                " fstr text, fnum int, fblob blob," +
+                " fsstr set<text>, fmap map<text, int>)";
+
+        String insert = "insert into " + keySpace + "." + table +
+                " (id, fstr, fnum, fblob, fsstr, fmap)" +
+                " values(?, ?, ?, ?, ?, ?)";
+
+        String pathname = keySpace + File.separator + table;
+        File directory = new File(pathname);
 
         if (!directory.exists()) {
             directory.mkdirs();
         }
 
-        List<AbstractType<?>> compositeColumnValues = new ArrayList<AbstractType<?>>();
-        compositeColumnValues.add(IntegerType.instance);
-        compositeColumnValues.add(UTF8Type.instance);
-        CompositeType compositeColumn = CompositeType
-                .getInstance(compositeColumnValues);
-
-        SSTableSimpleUnsortedWriter eventWriter = new SSTableSimpleUnsortedWriter(
-                directory, new Murmur3Partitioner(), keySpace, table, compositeColumn,
-                null, 8);
-
-        long timestamp = System.currentTimeMillis() * 1000;
-
+        CQLSSTableWriter writer = CQLSSTableWriter.builder()
+                .forTable(schema)
+                .inDirectory(pathname)
+                .using(insert)
+                .withBufferSizeInMB(64)
+                .build();
 
         for (int lineNumber = 0; lineNumber < 10; lineNumber++) {
             System.out.println(lineNumber);
 
-            eventWriter.newRow(bytes(UUID.randomUUID().toString()));
+            List<Object> row = new ArrayList<>();
 
-            Builder builder = compositeColumn.builder();
+            row.add(UUID.randomUUID().toString());
+            row.add("value" + lineNumber);
+            row.add(lineNumber);
+            row.add(bytes("value" + lineNumber));
 
-// First column is a cql3 row marker
-            builder.add(bytes(1));
-            builder.add(bytes(""));
-            eventWriter.addColumn(builder.build(), bytes(""), timestamp);
+            Set<String> fsstr = new HashSet<>();
+            fsstr.add("val1");
+            fsstr.add("val2");
 
-// Second column with a column value
-            builder = compositeColumn.builder();
-            builder.add(bytes(2));
-            builder.add(bytes("f"));
+            row.add(fsstr);
 
-            eventWriter.addColumn(
-                    builder.build(),
-                    bytes("value" + lineNumber),
-                    timestamp);
+            Map<String, Integer> map = new HashMap<>();
+
+            map.put("f1", 1);
+            map.put("f2", 2);
+
+            row.add(map);
+
+            try {
+                writer.addRow(row);
+            } catch (InvalidRequestException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+
         }
 
-        System.out.println("a");
-
-        eventWriter.close();
-
-        System.out.println("b");
+        writer.close();
 
         System.exit(0);
     }
