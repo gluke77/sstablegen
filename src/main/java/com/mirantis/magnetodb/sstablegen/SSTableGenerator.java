@@ -17,13 +17,14 @@ public class SSTableGenerator {
         String table = "events";
 
         String schema = "create table " + keySpace + "." + table +
-                " (id text primary key," +
+                " (id text, range text," +
                 " fstr text, fnum int, fblob blob," +
-                " fsstr set<text>, fmap map<text, int>)";
+                " fsstr set<text>, fmap map<text, int>," +
+                " primary key (id, range))";
 
         String insert = "insert into " + keySpace + "." + table +
-                " (id, fstr, fnum, fblob, fsstr, fmap)" +
-                " values(?, ?, ?, ?, ?, ?)";
+                " (id, range, fstr, fnum, fblob, fsstr, fmap)" +
+                " values(?, ?, ?, ?, ?, ?, ?)";
 
         String pathname = keySpace + File.separator + table;
         File directory = new File(pathname);
@@ -44,8 +45,10 @@ public class SSTableGenerator {
 
             List<Object> row = new ArrayList<>();
 
-            row.add(UUID.randomUUID().toString());
-            row.add("value" + lineNumber);
+            String id = "id" + lineNumber;
+            row.add(id);
+            row.add("r1");
+            row.add("newvalue" + lineNumber);
             row.add(lineNumber);
             row.add(bytes("value" + lineNumber));
 
@@ -67,6 +70,35 @@ public class SSTableGenerator {
             } catch (InvalidRequestException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
+
+            row = new ArrayList<>();
+
+            row.add(id);
+            row.add("r3");
+            row.add("newvalue" + lineNumber);
+            row.add(lineNumber);
+
+            row.add(bytes("value" + lineNumber));
+
+            fsstr = new HashSet<>();
+            fsstr.add("val1");
+            fsstr.add("val2");
+
+            row.add(fsstr);
+
+            map = new HashMap<>();
+
+            map.put("f1", 1);
+            map.put("f2", 2);
+
+            row.add(map);
+
+            try {
+                writer.addRow(row);
+            } catch (InvalidRequestException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+
 
         }
 
