@@ -43,62 +43,27 @@ public class SSTableGenerator {
         for (int lineNumber = 0; lineNumber < 10; lineNumber++) {
             System.out.println(lineNumber);
 
-            List<Object> row = new ArrayList<>();
-
             String id = "id" + lineNumber;
-            row.add(id);
-            row.add("r1");
-            row.add("newvalue" + lineNumber);
-            row.add(lineNumber);
-            row.add(bytes("value" + lineNumber));
 
             Set<String> fsstr = new HashSet<>();
             fsstr.add("val1");
             fsstr.add("val2");
 
-            row.add(fsstr);
-
             Map<String, Integer> map = new HashMap<>();
-
             map.put("f1", 1);
             map.put("f2", 2);
 
-            row.add(map);
-
             try {
-                writer.addRow(row);
+                writer.addRow(id, "r1", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
             } catch (InvalidRequestException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
 
-            row = new ArrayList<>();
-
-            row.add(id);
-            row.add("r3");
-            row.add("newvalue" + lineNumber);
-            row.add(lineNumber);
-
-            row.add(bytes("value" + lineNumber));
-
-            fsstr = new HashSet<>();
-            fsstr.add("val1");
-            fsstr.add("val2");
-
-            row.add(fsstr);
-
-            map = new HashMap<>();
-
-            map.put("f1", 1);
-            map.put("f2", 2);
-
-            row.add(map);
-
             try {
-                writer.addRow(row);
+                writer.addRow(id, "r2", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
             } catch (InvalidRequestException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
-
 
         }
 
