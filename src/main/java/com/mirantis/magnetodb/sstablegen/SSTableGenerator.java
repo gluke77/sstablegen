@@ -17,14 +17,14 @@ public class SSTableGenerator {
         String table = "events";
 
         String schema = "create table " + keySpace + "." + table +
-                " (id text, range text," +
+                " (id text, range text, indexed text," +
                 " fstr text, fnum int, fblob blob," +
                 " fsstr set<text>, fmap map<text, int>," +
-                " primary key (id, range))";
+                " primary key (id, range, indexed))";
 
         String insert = "insert into " + keySpace + "." + table +
-                " (id, range, fstr, fnum, fblob, fsstr, fmap)" +
-                " values(?, ?, ?, ?, ?, ?, ?)";
+                " (id, range, indexed, fstr, fnum, fblob, fsstr, fmap)" +
+                " values(?, ?, ?, ?, ?, ?, ?, ?)";
 
         String pathname = keySpace + File.separator + table;
         File directory = new File(pathname);
@@ -54,13 +54,15 @@ public class SSTableGenerator {
             map.put("f2", 2);
 
             try {
-                writer.addRow(id, "r1", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
+                writer.addRow(id, "r1", "", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
+                writer.addRow(id, "r1", "indexed", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
             } catch (InvalidRequestException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
 
             try {
-                writer.addRow(id, "r2", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
+                writer.addRow(id, "r2", "", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
+                writer.addRow(id, "r2", "indexed", "value" + lineNumber, lineNumber, bytes("value" + lineNumber), fsstr, map);
             } catch (InvalidRequestException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
